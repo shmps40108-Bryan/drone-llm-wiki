@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>多旋翼無人機入門</title>
+<style>
+:root{
+  --bg:#eef1f7; --stage:#ffffff; --ink:#1d2433; --muted:#5b6579; --line:#d8deea;
+  --accent:#3b5bdb; --accent-soft:#e7ecff; --up:#e8590c; --up-soft:#fff0e6;
+  --down:#1971c2; --down-soft:#e7f1fb; --ok:#2b8a3e; --ok-soft:#e6f5e9;
+  --warn:#c92a2a; --warn-soft:#fdecec; --bar:#ffffff;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1220; --stage:#171c2e; --ink:#e8ecf7; --muted:#9aa5bf; --line:#2c3450;
+    --accent:#8aa4ff; --accent-soft:#222c52; --up:#ff922b; --up-soft:#3a2a1c;
+    --down:#74b0f0; --down-soft:#1b2c42; --ok:#69db7c; --ok-soft:#1c3324;
+    --warn:#ff8787; --warn-soft:#3a1f22; --bar:#171c2e;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1220; --stage:#171c2e; --ink:#e8ecf7; --muted:#9aa5bf; --line:#2c3450;
+  --accent:#8aa4ff; --accent-soft:#222c52; --up:#ff922b; --up-soft:#3a2a1c;
+  --down:#74b0f0; --down-soft:#1b2c42; --ok:#69db7c; --ok-soft:#1c3324;
+  --warn:#ff8787; --warn-soft:#3a1f22; --bar:#171c2e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;overflow:hidden}
+#viewport{position:absolute;inset:0 0 56px 0;display:flex;align-items:center;justify-content:center}
+#stage{width:1280px;height:720px;position:relative;transform-origin:center center;flex:none}
+.slide{position:absolute;inset:0;background:var(--stage);border:1px solid var(--line);border-radius:20px;
+  padding:44px 64px 64px;display:none;flex-direction:column;box-shadow:0 10px 40px rgba(20,30,70,.12)}
+.slide.active{display:flex}
+.slide h1{font-size:54px;line-height:1.15;margin:0 0 14px}
+.slide h2{font-size:38px;margin:0 0 16px;line-height:1.2}
+.kicker{font-size:18px;letter-spacing:.08em;color:var(--accent);font-weight:700;margin-bottom:6px}
+.lead{font-size:24px;color:var(--muted);margin:0 0 18px;line-height:1.5}
+.body{flex:1;display:flex;flex-direction:column;gap:14px;min-height:0}
+.src{position:absolute;left:64px;right:64px;bottom:18px;font-size:15px;color:var(--muted);
+  border-top:1px dashed var(--line);padding-top:8px}
+.src b{color:var(--accent)}
+ul{margin:0;padding-left:1.1em;font-size:25px;line-height:1.55}
+li{margin:3px 0}
+.cols{display:grid;gap:18px;flex:1;min-height:0}
+.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:repeat(3,1fr)}.c4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--accent-soft);border-radius:16px;padding:16px 20px;font-size:22px;line-height:1.5}
+.card h3{margin:0 0 6px;font-size:24px}
+.card.up{background:var(--up-soft)}.card.down{background:var(--down-soft)}
+.card.ok{background:var(--ok-soft)}.card.warn{background:var(--warn-soft)}
+.pill{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:999px;
+  padding:4px 14px;font-size:18px;font-weight:700;margin-right:8px}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:22px}
+th,td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top;line-height:1.45}
+th{background:var(--accent-soft);color:var(--accent);font-size:20px}
+.big{font-size:56px;font-weight:800;color:var(--accent);line-height:1.1}
+.bigsub{font-size:19px;color:var(--muted)}
+.note{font-size:20px;color:var(--muted);line-height:1.5}
+.tag{white-space:nowrap;font-size:16px;font-weight:700;border-radius:8px;padding:2px 8px;background:var(--warn-soft);color:var(--warn);margin-left:6px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer}
+.act{border:2px solid var(--line);background:var(--stage);color:var(--ink);border-radius:12px;padding:10px 16px;font-size:20px;font-weight:700}
+.act[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.qa{border:1px solid var(--line);border-radius:14px;padding:10px 16px;font-size:20px;line-height:1.45}
+.qa .q{font-weight:700}
+.qa .a{display:none;margin-top:6px;color:var(--ok)}
+.qa.open .a{display:block}
+.qa button{margin-top:4px;border:1px solid var(--line);background:var(--stage);color:var(--accent);border-radius:8px;padding:2px 10px;font-size:16px}
+.legend{display:flex;gap:14px;font-size:18px;align-items:center}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+#bar{position:absolute;left:0;right:0;bottom:0;height:56px;background:var(--bar);border-top:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;font-size:16px}
+#bar .grp{display:flex;gap:8px;align-items:center}
+#bar button{border:1px solid var(--line);background:var(--stage);color:var(--ink);border-radius:10px;padding:6px 12px;font-size:15px}
+#bar button:disabled{opacity:.4;cursor:default}
+#count{font-variant-numeric:tabular-nums;font-weight:700}
+#progress{position:absolute;left:0;top:0;height:4px;background:var(--accent);width:0;transition:width .2s}
+#overview{position:absolute;inset:0 0 56px 0;background:var(--bg);display:none;overflow:auto;padding:24px;z-index:5}
+#overview.show{display:block}
+#overview h2{margin:0 0 14px;font-size:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.grid button{text-align:left;border:1px solid var(--line);background:var(--stage);color:var(--ink);border-radius:12px;padding:12px;font-size:16px;line-height:1.4}
+.grid button b{display:block;color:var(--accent);margin-bottom:2px}
+.grid button.cur{outline:3px solid var(--accent)}
+svg text{font-family:inherit}
+svg text.nm{fill:var(--ink)}
+.body.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start;overflow:auto}
+@media (max-width:640px){#bar .hint{display:none}}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="viewport"><div id="stage">
+
+<!-- 1 封面 -->
+<section class="slide" data-title="封面">
+  <div class="body" style="justify-content:center">
+    <div><span class="pill">教學簡報</span><span class="pill">LLM Wiki 製作</span></div>
+    <h1>多旋翼無人機入門</h1>
+    <p class="lead" style="font-size:30px">這台會飛的小機器是怎麼飛的？<br>在台灣飛之前，你要先知道什麼？</p>
+    <p class="note">內容全部取自「多旋翼無人機入門」LLM Wiki（8 份來源），每一頁底部都標示出處。<br>操作：← → 或空白鍵翻頁　G 看總覽　F 全螢幕</p>
+  </div>
+  <div class="src"><b>來源</b>：整份簡報取自本 Wiki；完整來源與可信度見最後一頁</div>
+</section>
+
+<!-- 2 學習目標 -->
+<section class="slide" data-title="學習目標">
+  <div class="kicker">學習目標</div><h2>看完這份簡報，你可以…</h2>
+  <div class="body">
+    <ul>
+      <li>說出一台多旋翼由哪些部分組成</li>
+      <li>用「馬達速度差」解釋它如何升降、前進、轉向</li>
+      <li>說明為什麼多旋翼一定要有飛行控制電腦</li>
+      <li>知道在台灣玩無人機的三件事：<b>註冊、考照、飛行規則</b></li>
+      <li>分辨網路上的新舊資訊，不被過時的規定誤導</li>
+    </ul>
+    <div class="cols c4" style="flex:none">
+      <div class="card"><h3>① 它是什麼</h3>第 3–4 頁</div>
+      <div class="card"><h3>② 怎麼飛</h3>第 5–7 頁</div>
+      <div class="card"><h3>③ 能做什麼</h3>第 8–9 頁</div>
+      <div class="card"><h3>④ 台灣規定</h3>第 10–13 頁</div>
+    </div>
+  </div>
+  <div class="src"><b>來源</b>：本頁為教學設計，無事實主張</div>
+</section>
+
+<!-- 3 什麼是無人機 -->
+<section class="slide" data-title="什麼是無人機">
+  <div class="kicker">概念</div><h2>無人機、UAV、多旋翼，有什麼差別？</h2>
+  <div class="body">
+    <div class="cols c3">
+      <div class="card"><h3>UAV</h3>沒有機上人員、可以自主飛行或遙控的航空器。</div>
+      <div class="card"><h3>UAS</h3>UAV 加上地面控制站、資料鏈等支援設備，強調「整個系統」。</div>
+      <div class="card"><h3>drone</h3>日常用語，軍用民用都可以指。技術與法規文件常用 UAV、UAS 等詞。</div>
+    </div>
+    <div class="cols c2">
+      <div class="card up"><h3>多旋翼（multicopter）</h3>用<b>多個</b>馬達／螺旋槳的速度變化來控制動作。<br>要<b>能自主飛行</b>（結合氣壓計與 GPS），才算 UAV。</div>
+      <div class="card ok"><h3>台灣法規怎麼叫</h3>稱為「<b>遙控無人機</b>」，依構造分：無人飛機、無人直昇機、<b>無人多旋翼機</b>，以及民航局公告的其他類型。</div>
+    </div>
+  </div>
+  <div class="src"><b>來源</b>：[S04] [S01] [S09 第2、3條]　｜　Wiki：無人機名詞與分類、多旋翼無人機</div>
+</section>
+
+<!-- 4 結構 -->
+<section class="slide" data-title="結構">
+  <div class="kicker">概念</div><h2>一台多旋翼，長什麼樣？</h2>
+  <div class="body">
+    <div class="cols c3">
+      <div class="card"><h3>機架（機身）</h3>主要機械組件之一。馬達與螺旋槳<b>等距</b>時，性能最好、控制演算法最簡單。</div>
+      <div class="card"><h3>螺旋槳＋馬達</h3>向下推空氣產生升力。四旋翼就是 4 組；六、八旋翼原理相同，只是數量不同。</div>
+      <div class="card"><h3>飛控（自動駕駛儀）</h3>配合 MEMS 陀螺儀與加速度計，估計姿態與位置。</div>
+    </div>
+    <div class="cols c3">
+      <div class="card"><h3>電池</h3>小型機以電池供電，多用鋰聚合物電池。</div>
+      <div class="card"><h3>氣壓計＋GPS</h3>讓飛控知道自己的位置，才能自主飛行。</div>
+      <div class="card ok"><h3>為什麼多旋翼這麼流行？</h3>結構簡單、比傳統直升機便宜耐用；旋翼小、動能低，較安全。<br><span class="note">限制：機體變大後旋翼慣性大、變速慢，控制變差。</span></div>
+    </div>
+  </div>
+  <div class="src"><b>來源</b>：[S01] [S02] [S04]　｜　Wiki：多旋翼無人機</div>
+</section>
+
+<!-- 5 原理 -->
+<section class="slide" data-title="升力與旋翼轉向">
+  <div class="kicker">怎麼飛（1）</div><h2>升力從哪來？為什麼不需要尾旋翼？</h2>
+  <div class="body">
+    <div class="cols c2">
+      <div class="card up"><h3>① 推空氣，被空氣推回來</h3>旋翼向下推空氣，空氣反過來推旋翼，就是升力。旋翼越快，升力越大。
+        <ul style="font-size:22px">
+          <li><b>懸停</b>：推力＝重力</li>
+          <li><b>上升</b>：四顆同時加快，推力大於重力</li>
+          <li><b>下降</b>：四顆同時減慢</li>
+        </ul></div>
+      <div class="card down"><h3>② 兩組旋翼，轉向相反</h3>四旋翼的馬達分成兩組：<b>對角的兩顆轉向相同</b>，相鄰的兩顆轉向相反。
+        <ul style="font-size:22px">
+          <li>四顆等速時，扭矩互相抵消，偏航方向淨扭矩為零</li>
+          <li>所以<b>不需要</b>傳統直升機的尾旋翼</li>
+          <li>要轉向，就讓兩組的扭矩<b>故意不平衡</b></li>
+        </ul></div>
+    </div>
+    <p class="note">下一頁用互動示範，看看每個動作是哪幾顆馬達變快、變慢。</p>
+  </div>
+  <div class="src"><b>來源</b>：[S01] [S02] [S03]　｜　Wiki：飛行原理</div>
+</section>
+
+<!-- 6 互動示範 -->
+<section class="slide" data-title="互動示範">
+  <div class="kicker">怎麼飛（2）互動示範</div><h2>按一下，看哪幾顆馬達加快、減慢</h2>
+  <div class="body">
+    <div class="cols" style="grid-template-columns:420px 1fr;align-items:center">
+      <svg id="quad" viewBox="0 0 400 340" role="img" aria-label="四旋翼馬達示意圖" style="width:420px;height:340px">
+        <text x="200" y="18" text-anchor="middle" font-size="18" fill="var(--muted)">▲ 機頭（前方）</text>
+        <line x1="110" y1="80" x2="290" y2="260" stroke="var(--line)" stroke-width="10" stroke-linecap="round"/>
+        <line x1="290" y1="80" x2="110" y2="260" stroke="var(--line)" stroke-width="10" stroke-linecap="round"/>
+        <rect x="170" y="150" width="60" height="60" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="3"/>
+        <text x="200" y="186" text-anchor="middle" font-size="16" fill="var(--accent)">飛控</text>
+        <g id="m-FL"><circle cx="100" cy="90" r="50" fill="var(--bg)" stroke="var(--line)" stroke-width="4"/><text x="100" y="82" text-anchor="middle" font-size="18" font-weight="700" class="nm">左前</text><text x="100" y="106" text-anchor="middle" font-size="17" class="st">—</text><text x="100" y="146" text-anchor="middle" font-size="14" fill="var(--muted)">A 組</text></g>
+        <g id="m-FR"><circle cx="300" cy="90" r="50" fill="var(--bg)" stroke="var(--line)" stroke-width="4"/><text x="300" y="82" text-anchor="middle" font-size="18" font-weight="700" class="nm">右前</text><text x="300" y="106" text-anchor="middle" font-size="17" class="st">—</text><text x="300" y="146" text-anchor="middle" font-size="14" fill="var(--muted)">B 組</text></g>
+        <g id="m-BL"><circle cx="100" cy="255" r="50" fill="var(--bg)" stroke="var(--line)" stroke-width="4"/><text x="100" y="247" text-anchor="middle" font-size="18" font-weight="700" class="nm">左後</text><text x="100" y="271" text-anchor="middle" font-size="17" class="st">—</text><text x="100" y="311" text-anchor="middle" font-size="14" fill="var(--muted)">B 組</text></g>
+        <g id="m-BR"><circle cx="300" cy="255" r="50" fill="var(--bg)" stroke="var(--line)" stroke-width="4"/><text x="300" y="247" text-anchor="middle" font-size="18" font-weight="700" class="nm">右後</text><text x="300" y="271" text-anchor="middle" font-size="17" class="st">—</text><text x="300" y="311" text-anchor="middle" font-size="14" fill="var(--muted)">A 組</text></g>
+      </svg>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="btnrow" id="acts">
+          <button class="act" data-a="hover" aria-pressed="true">懸停</button>
+          <button class="act" data-a="up" aria-pressed="false">上升</button>
+          <button class="act" data-a="forward" aria-pressed="false">向前飛</button>
+          <button class="act" data-a="left" aria-pressed="false">向左傾斜</button>
+          <button class="act" data-a="yaw" aria-pressed="false">原地轉向</button>
+        </div>
+        <div class="legend"><span><span class="dot" style="background:var(--up)"></span>加快</span><span><span class="dot" style="background:var(--down)"></span>減慢</span><span><span class="dot" style="background:var(--muted)"></span>不變</span></div>
+        <div class="card" id="explain" style="font-size:23px;min-height:118px"></div>
+        <div class="note">A 組、B 組＝兩組對角馬達，同組轉向相同。</div>
+      </div>
+    </div>
+  </div>
+  <div class="src"><b>來源</b>：[S01] [S02] [S03]　｜　Wiki：飛行原理</div>
+</section>
+
+<!-- 7 飛控 -->
+<section class="slide" data-title="飛行控制">
+  <div class="kicker">怎麼飛（3）</div><h2>為什麼一定要有電腦？</h2>
+  <div class="body">
+    <div class="cols c2">
+      <div class="card warn"><h3>多旋翼自己是「不穩定」的</h3>在空氣動力上不穩定，<b>一定要</b>有機載電腦（自動駕駛儀）才能穩定飛行。電腦沒作用，就飛不起來。
+        <br><br><b>感測器</b>：MEMS 陀螺儀與加速度計（和智慧型手機裡的同類）；再加氣壓計與 GPS，才知道位置。</div>
+      <div>
+        <table>
+          <tr><th>飛行模式（ArduPilot 示範）</th><th>做什麼</th></tr>
+          <tr><td>Stabilize 穩定</td><td>慣性穩定，可手動操控</td></tr>
+          <tr><td>Loiter 盤旋</td><td>自動維持位置與高度，可手動覆蓋</td></tr>
+          <tr><td>Simple</td><td>不必在意機頭朝向</td></tr>
+          <tr><td>Auto Land</td><td>自動降落，落地後關閉馬達</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="card ok">與法規連結：最大起飛重量 <b>1 公斤以上</b>且裝有導航設備的無人機，要有圖資軟體，<b>主動限制或警告</b>它飛進禁航區、限航區與機場周邊。</div>
+  </div>
+  <div class="src"><b>來源</b>：[S01] [S03] [S09 第12條]　｜　Wiki：飛行控制系統</div>
+</section>
+
+<!-- 8 應用 -->
+<section class="slide" data-title="應用">
+  <div class="kicker">能做什麼</div><h2>無人機的民用應用</h2>
+  <div class="body">
+    <div class="cols c3" style="flex:none">
+      <div class="card"><h3>空拍與影視</h3>能到危險、偏遠的地方拍攝。</div>
+      <div class="card"><h3>農業與環境</h3>精準農業（優化肥料、農藥、灌溉）；監測生態、野火。</div>
+      <div class="card"><h3>測量與檢查</h3>地形測繪；水壩、鐵路等結構檢查；山崩等地質災害監測。</div>
+      <div class="card"><h3>人道救援</h3>運送食物、藥品到偏遠地區；災前災後影像建圖。</div>
+      <div class="card"><h3>包裹運送</h3>例如 Amazon Prime Air；醫療物資緊急運送。</div>
+      <div class="card"><h3>娛樂</h3>夜間燈光秀（比煙火安全、安靜、環保）、無人機競速。</div>
+    </div>
+    <div class="cols c4" style="flex:none;align-items:end">
+      <div><div class="big">40,368</div><div class="bigsub">台灣註冊無人機（架）</div></div>
+      <div><div class="big">19,573</div><div class="bigsub">合格操作證（張）</div></div>
+      <div><div class="big">742</div><div class="bigsub">具商業活動資格的法人（個）</div></div>
+      <div class="note">以上為 2024 年 6 月底數據，依民航局記者會新聞報導；每月審查的活動案件約 500 多件。</div>
+    </div>
+  </div>
+  <div class="src"><b>來源</b>：應用 [S04]；台灣數字 [S06]（新聞）　｜　Wiki：無人機應用</div>
+</section>
+
+<!-- 9 風險 -->
+<section class="slide" data-title="風險">
+  <div class="kicker">銜接</div><h2>飛得不對，會發生什麼事？</h2>
+  <div class="body">
+    <div class="cols c2">
+      <div>
+        <table>
+          <tr><th>時間</th><th>國外案例</th></tr>
+          <tr><td>2017 年 10 月</td><td>加拿大魁北克市：首起無人機與飛機碰撞</td></tr>
+          <tr><td>2018 年 8 月</td><td>美國愛達荷州：無人機撞上熱氣球，無人受傷</td></tr>
+          <tr><td>2018 年 12 月</td><td>英國 Gatwick 機場受嚴重影響，需出動陸軍</td></tr>
+        </table>
+        <p class="note">擅闖大型機場附近，曾導致商業航班長時間停飛。</p>
+      </div>
+      <div>
+        <table>
+          <tr><th>風險</th><th>台灣怎麼管</th></tr>
+          <tr><td>闖入機場、禁航區</td><td>圖資防呆功能；法人事先申請</td></tr>
+          <tr><td>危險操作</td><td>不得酒駕；與建築物、道路保持 30 公尺</td></tr>
+          <tr><td>與其他航空器接近、碰撞</td><td>保持警覺並避讓；24 小時內通報</td></tr>
+          <tr><td>亂改系統</td><td>不得無故刪除或變更射頻識別資料與圖資軟體</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="src"><b>來源</b>：國外案例 [S04]；台灣規定 [S09 第12、27、28、29、31、36、40-1條]　｜　Wiki：無人機安全與風險</div>
+</section>
+
+<!-- 10 註冊 -->
+<section class="slide" data-title="註冊">
+  <div class="kicker">台灣法規（1）</div><h2>註冊：機器要有「身分證」</h2>
+  <div class="body">
+    <div class="cols c2">
+      <div>
+        <div class="card up" style="margin-bottom:14px"><h3>誰要註冊？</h3>
+          <ul style="font-size:23px">
+            <li><b>自然人</b>：最大起飛重量 <b>250 公克以上</b></li>
+            <li><b>政府機關、學校、法人</b>：所有無人機</li>
+          </ul></div>
+        <div class="card"><h3>怎麼註冊？</h3>
+          <ul style="font-size:23px">
+            <li>向民航局申請，取得註冊號碼，並<b>標在機體顯著處</b></li>
+            <li>自然人須<b>年滿 14 歲</b>；未滿 18 歲要附法定代理人同意書</li>
+            <li>註冊號碼效期 <b>2 年</b>，到期前 30 天內可申請延展</li>
+            <li>機器報廢、轉讓等，<b>15 日內</b>申請註銷</li>
+          </ul></div>
+      </div>
+      <div>
+        <div class="card ok"><h3>機器本身也要合格</h3>製造商、進口商在公開販售前要先登錄，並依重量檢驗：
+          <table style="font-size:21px;margin-top:8px">
+            <tr><td>未達 2 公斤</td><td>經濟部標準檢驗局商品檢驗</td></tr>
+            <tr><td>2 公斤以上</td><td>民航局型式檢驗</td></tr>
+            <tr><td>25 公斤以上</td><td>另需實體檢驗</td></tr>
+          </table></div>
+        <p class="note">電商賣無人機時，也要以中文標示「250 公克以上應辦理註冊」。</p>
+      </div>
+    </div>
+  </div>
+  <div class="src"><b>來源</b>：[S09 第6、7、10、15、17條]　｜　Wiki：註冊制度、製造與進口檢驗</div>
+</section>
+
+<!-- 11 考照 -->
+<section class="slide" data-title="考照">
+  <div class="kicker">台灣法規（2）</div><h2>考照：什麼時候需要操作證？</h2>
+  <div class="body">
+    <div class="card up"><h3>需要操作證的情形（符合任一）</h3>
+      <ul style="font-size:23px">
+        <li>機體屬於政府機關、學校或<b>法人</b></li>
+        <li>自然人所有，<b>2 公斤以上、未達 15 公斤，且裝有導航設備</b></li>
+        <li>自然人所有，<b>15 公斤以上</b></li>
+      </ul></div>
+    <table>
+      <tr><th>種類</th><th>年齡</th><th>取得方式</th><th>能操作什麼</th></tr>
+      <tr><td>學習操作證</td><td>滿 14 歲</td><td>申請後發給</td><td>在有證者旁指導下，學習操作未達 25 公斤的機體</td></tr>
+      <tr><td>普通操作證</td><td>滿 18 歲</td><td>學科測驗</td><td>自然人所有、2 公斤以上未達 15 公斤且有導航的機體</td></tr>
+      <tr><td>專業操作證</td><td>滿 18 歲</td><td>體檢＋學科＋術科</td><td>法人、學校、機關的機體；自然人 15 公斤以上</td></tr>
+    </table>
+    <div class="cols c2" style="flex:none">
+      <div class="card ok">操作證效期 <b>3 年</b>；專業操作證換證要重新體檢並通過換證測驗。</div>
+      <div class="card warn">別搞混：操作證 <b>3 年</b>，註冊號碼是 <b>2 年</b>。</div>
+    </div>
+  </div>
+  <div class="src"><b>來源</b>：[S09 第19、20、23條]；修法前的年齡與效期見 [S06]（新聞）　｜　Wiki：操作證制度</div>
+</section>
+
+<!-- 12 飛行規則 -->
+<section class="slide" data-title="飛行規則">
+  <div class="kicker">台灣法規（3）</div><h2>飛行時要遵守的規則</h2>
+  <div class="body">
+    <div class="cols c2">
+      <table>
+        <tr><th>項目</th><th>規定</th></tr>
+        <tr><td>酒精</td><td>血液酒精濃度不得超過 0.02%</td></tr>
+        <tr><td>藥物</td><td>不得受精神作用物質影響</td></tr>
+        <tr><td>安全距離</td><td>遠離高速公路、快速道路、鐵路、捷運、建築物與障礙物 <b>30 公尺以上</b></td></tr>
+        <tr><td>載具</td><td>不得在移動中的航空器、車輛、船艦上操作</td></tr>
+      </table>
+      <table>
+        <tr><th>項目</th><th>規定</th></tr>
+        <tr><td>速度</td><td>未達 25 公斤且有導航者，不得超過每小時 160 公里</td></tr>
+        <tr><td>延伸視距</td><td>半徑 900 公尺內、相對高度不逾 400 呎，須有持證的目視觀察員</td></tr>
+        <tr><td>事故通報</td><td>發生事故或與其他航空器接近、碰撞，<b>24 小時內</b>通報民航局</td></tr>
+        <tr><td>法人在禁航區、限航區</td><td>活動日 <b>15 天前</b>提出申請</td></tr>
+      </table>
+    </div>
+    <div class="card warn"><b>禁航區、限航區的實際範圍不在本簡報的資料裡。</b>飛行前請查民航局公告的圖資，不要憑印象。</div>
+  </div>
+  <div class="src"><b>來源</b>：[S09 第2、27、28、31、36條]；禁航區範圍屬《民用航空法》，不在本 Wiki 來源內　｜　Wiki：操作限制</div>
+</section>
+
+<!-- 13 舊資訊 -->
+<section class="slide" data-title="小心舊資訊">
+  <div class="kicker">常見誤解</div><h2>小心！網路上的舊資訊</h2>
+  <div class="body">
+    <table>
+      <tr><th>主題</th><th>2018 年草案階段的報導</th><th>現行規定（113.11.14 修正版）</th></tr>
+      <tr><td>自然人何時要考照</td><td>操控 1–25 公斤就要考<span class="tag">過時</span></td><td>2 公斤以上未達 15 公斤且有導航，或 15 公斤以上</td></tr>
+      <tr><td>學習操作證</td><td>沒提到</td><td>有，滿 14 歲（修法前為 16 歲）</td></tr>
+      <tr><td>機體檢驗</td><td>250 公克到 25 公斤「簡易送驗」<span class="tag">制度已改</span></td><td>未達 2 公斤商品檢驗；2 公斤以上型式檢驗；25 公斤以上實體檢驗</td></tr>
+      <tr><td>操作證效期</td><td>—</td><td>修法前 2 年，現行 3 年</td></tr>
+    </table>
+    <div class="cols c3" style="flex:none">
+      <div class="card"><h3>看日期</h3>規定會修改，舊文章可能已經不對。</div>
+      <div class="card"><h3>草案 ≠ 定案</h3>「預計」「草案」的內容，不等於最後的規定。</div>
+      <div class="card"><h3>以法條為準</h3>新聞數字若查不到法條依據，不要直接引用。</div>
+    </div>
+    <p class="note">另外：自 116 年 12 月 1 日起，法人使用的導航無人機須符合資安檢測與檢驗規定。</p>
+  </div>
+  <div class="src"><b>來源</b>：舊說法 [S05]；修法前後 [S06]；現行 [S09 第19、20、23、31、32條]　｜　Wiki：法規演變</div>
+</section>
+
+<!-- 14 小結 -->
+<section class="slide" data-title="小結">
+  <div class="kicker">小結</div><h2>帶走這三件事</h2>
+  <div class="body">
+    <div class="cols c3">
+      <div class="card up"><h3>① 怎麼飛</h3>四旋翼靠<b>馬達速度差</b>控制：同加同減＝升降；後兩顆快＝前進；對角一組快＝轉向。</div>
+      <div class="card down"><h3>② 要有電腦</h3>多旋翼自己不穩定，必須靠<b>飛控＋感測器</b>才能穩定飛行。</div>
+      <div class="card ok"><h3>③ 台灣三件事</h3><b>註冊</b>（自然人 250 公克以上）<br><b>考照</b>（視重量、導航設備、機體所有人）<br><b>守規則</b>（30 公尺、24 小時通報…）</div>
+    </div>
+    <p class="note">最後提醒：規定會更新，引用法規要標明日期與版本，並以法條原文為準。</p>
+  </div>
+  <div class="src"><b>來源</b>：統整第 5–13 頁　[S01] [S02] [S03] [S09]</div>
+</section>
+
+<!-- 15 測驗 -->
+<section class="slide" data-title="小測驗">
+  <div class="kicker">小測驗</div><h2>換你試試看（點「看答案」）</h2>
+  <div class="body qgrid">
+    <div class="qa"><div class="q">Q1　自然人有一台 300 公克的無人機，需要註冊嗎？</div><button>看答案</button><div class="a">需要。自然人所有、250 公克以上就要註冊。［S09 第6條］</div></div>
+    <div class="qa"><div class="q">Q2　自然人的 1.5 公斤、有導航的無人機，需要操作證嗎？</div><button>看答案</button><div class="a">不需要。自然人須「2 公斤以上未達 15 公斤且有導航」才要操作證；但仍要註冊，且 1 公斤以上有導航要有圖資防呆功能。［S09 第6、12、19條］</div></div>
+    <div class="qa"><div class="q">Q3　想讓四旋翼「向前飛」，馬達要怎麼調？</div><button>看答案</button><div class="a">後方兩顆加快、前方兩顆減慢，機身前傾，再加大整體推力。［S01］</div></div>
+    <div class="qa"><div class="q">Q4　操作證和註冊號碼，效期各是幾年？</div><button>看答案</button><div class="a">操作證 3 年；註冊號碼 2 年。［S09 第10、23條］</div></div>
+    <div class="qa"><div class="q">Q5　剛好 2 公斤的機器，是商品檢驗還是型式檢驗？</div><button>看答案</button><div class="a">型式檢驗。法條是「未達 2 公斤」商品檢驗、「2 公斤以上」型式檢驗。［S09 第17條］</div></div>
+    <div class="qa"><div class="q">Q6　有文章說「1 到 25 公斤才要考照」，可信嗎？</div><button>看答案</button><div class="a">不可信。那是 2018 年草案階段的說法，現行規定不同。［S05 對照 S09 第19條］</div></div>
+  </div>
+  <div class="src"><b>來源</b>：[S01] [S05] [S09]　｜　Wiki：飛行原理、註冊制度、操作證制度、製造與進口檢驗、法規演變</div>
+</section>
+
+<!-- 16 來源 -->
+<section class="slide" data-title="來源與限制">
+  <div class="kicker">參考來源</div><h2>資料從哪來、有什麼限制</h2>
+  <div class="body">
+    <table style="font-size:19px">
+      <tr><th>編號</th><th>來源</th><th>可信度</th></tr>
+      <tr><td>S01</td><td>ArduPilot 官方文件：What is a MultiCopter</td><td>高</td></tr>
+      <tr><td>S02 / S04</td><td>Wikipedia：Quadcopter、Unmanned aerial vehicle</td><td>中高</td></tr>
+      <tr><td>S03</td><td>T客邦：無人機飛行原理（2018，轉譯）</td><td>中</td></tr>
+      <tr><td>S05</td><td>INSIDE 2018 舊法規報導</td><td>低（過時，僅作對照）</td></tr>
+      <tr><td>S06 / S07</td><td>NOWnews、TechNews 2024 修法新聞（同一場記者會）</td><td>中</td></tr>
+      <tr><td>S09</td><td>遙控無人機管理規則（全國法規資料庫，113.11.14 修正）</td><td>高（法規以此為準）</td></tr>
+    </table>
+    <div class="cols c2" style="flex:none">
+      <div class="card warn"><h3>限制</h3>禁航區、限航區的實際範圍與罰則金額不在來源內；新聞說法僅供參考。</div>
+      <div class="card"><h3>資料日期</h3>資料取得日 2026-11-10。法規以 S09（113.11.14 修正版）為準，引用時要標明日期與版本。</div>
+    </div>
+  </div>
+  <div class="src"><b>來源</b>：Wiki index 與各來源頁</div>
+</section>
+
+</div></div>
+
+<div id="overview"><h2>總覽（點一下跳到該頁）</h2><div class="grid" id="grid"></div></div>
+
+<div id="bar">
+  <div class="grp"><button id="prev">◀ 上一頁</button></div>
+  <div class="grp"><span id="count">01 / 16</span><span class="hint" style="color:var(--muted)">← → 空白鍵翻頁</span></div>
+  <div class="grp"><button id="next">下一頁 ▶</button><button id="ovBtn">總覽 (G)</button><button id="fsBtn">全螢幕 (F)</button></div>
+</div>
+
+<script>
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var stage=document.getElementById('stage'), idx=0, total=slides.length;
+  var count=document.getElementById('count'), prog=document.getElementById('progress');
+  var prev=document.getElementById('prev'), next=document.getElementById('next');
+  var ov=document.getElementById('overview'), grid=document.getElementById('grid');
+  function pad(n){return (n<10?'0':'')+n}
+  function show(i){
+    idx=Math.max(0,Math.min(total-1,i));
+    slides.forEach(function(s,k){s.classList.toggle('active',k===idx)});
+    count.textContent=pad(idx+1)+' / '+pad(total);
+    prog.style.width=((idx+1)/total*100)+'%';
+    prev.disabled=idx===0; next.disabled=idx===total-1;
+    try{history.replaceState(null,'','#'+(idx+1))}catch(e){}
+    document.title='多旋翼無人機入門（'+(idx+1)+'/'+total+'）';
+  }
+  function fit(){
+    var vw=window.innerWidth, vh=window.innerHeight-56;
+    var s=Math.min((vw-24)/1280,(vh-24)/720);
+    stage.style.transform='scale('+s+')';
+  }
+  function toggleOv(force){
+    var on=(typeof force==='boolean')?force:!ov.classList.contains('show');
+    ov.classList.toggle('show',on);
+    if(on){[].forEach.call(grid.children,function(b,k){b.classList.toggle('cur',k===idx)})}
+  }
+  function fs(){
+    var d=document, el=d.documentElement;
+    try{
+      if(!d.fullscreenElement){(el.requestFullscreen||function(){}).call(el)}
+      else{d.exitFullscreen()}
+    }catch(e){}
+  }
+  slides.forEach(function(s,k){
+    var b=document.createElement('button');
+    b.innerHTML='<b>'+pad(k+1)+'</b>'+s.getAttribute('data-title');
+    b.addEventListener('click',function(){show(k);toggleOv(false)});
+    grid.appendChild(b);
+  });
+  prev.addEventListener('click',function(){show(idx-1);prev.blur()});
+  next.addEventListener('click',function(){show(idx+1);next.blur()});
+  document.getElementById('ovBtn').addEventListener('click',function(){toggleOv();this.blur()});
+  document.getElementById('fsBtn').addEventListener('click',function(){fs();this.blur()});
+  document.addEventListener('keydown',function(e){
+    if(e.ctrlKey||e.metaKey||e.altKey)return;
+    var inBtn=e.target&&e.target.closest&&e.target.closest('button');
+    var k=e.key;
+    if(k==='ArrowRight'||k==='PageDown'||(k===' '&&!inBtn)){e.preventDefault();show(idx+1)}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();show(idx-1)}
+    else if(k==='Home'){show(0)}
+    else if(k==='End'){show(total-1)}
+    else if(k==='g'||k==='G'){toggleOv()}
+    else if(k==='f'||k==='F'){fs()}
+    else if(k==='Escape'){toggleOv(false)}
+  });
+  var tx=null;
+  document.addEventListener('touchstart',function(e){tx=e.touches[0].clientX},{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(tx===null)return; var dx=e.changedTouches[0].clientX-tx; tx=null;
+    if(Math.abs(dx)>60){show(idx+(dx<0?1:-1))}
+  },{passive:true});
+  window.addEventListener('resize',fit);
+
+  /* 第 6 頁：互動示範 */
+  var ACTS={
+    hover:{FL:0,FR:0,BL:0,BR:0,t:'<b>懸停</b>：四顆馬達推力相同，總推力等於重力，所以停在空中。'},
+    up:{FL:1,FR:1,BL:1,BR:1,t:'<b>上升</b>：四顆同時加快，推力大於重力。（四顆同時減慢就是下降。）'},
+    forward:{FL:-1,FR:-1,BL:1,BR:1,t:'<b>向前飛</b>：後方兩顆加快、前方兩顆減慢，機身前傾；再加大整體推力，就往前飛。傾斜越多，速度越快。'},
+    left:{FL:-1,BL:-1,FR:1,BR:1,t:'<b>向左傾斜（橫滾）</b>：右側兩顆加快、左側兩顆減慢，機身向左傾斜。'},
+    yaw:{FL:1,BR:1,FR:-1,BL:-1,t:'<b>原地轉向（偏航）</b>：加快對角的一組（A 組）、減慢另一組（B 組），兩組扭矩不平衡，機身就轉向。'}
+  };
+  var COL={'1':'var(--up)','-1':'var(--down)','0':'var(--muted)'};
+  var TXT={'1':'加快 ▲','-1':'減慢 ▼','0':'不變'};
+  function setAct(a){
+    var c=ACTS[a];
+    ['FL','FR','BL','BR'].forEach(function(m){
+      var g=document.getElementById('m-'+m), v=String(c[m]);
+      g.querySelector('circle').setAttribute('stroke',COL[v]);
+      g.querySelector('circle').setAttribute('fill',v==='1'?'var(--up-soft)':v==='-1'?'var(--down-soft)':'var(--bg)');
+      var st=g.querySelector('.st'); st.textContent=TXT[v]; st.setAttribute('fill',COL[v]); st.setAttribute('font-weight','700');
+    });
+    document.getElementById('explain').innerHTML=c.t;
+    [].forEach.call(document.querySelectorAll('#acts .act'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-a')===a))});
+  }
+  [].forEach.call(document.querySelectorAll('#acts .act'),function(b){
+    b.addEventListener('click',function(){setAct(b.getAttribute('data-a'));b.blur()});
+  });
+  setAct('hover');
+
+  /* 第 15 頁：測驗 */
+  [].forEach.call(document.querySelectorAll('.qa'),function(q){
+    var btn=q.querySelector('button');
+    btn.addEventListener('click',function(){
+      var open=q.classList.toggle('open'); btn.textContent=open?'收起答案':'看答案'; btn.blur();
+    });
+  });
+
+  var h=parseInt((location.hash||'').replace('#',''),10);
+  fit(); show(isNaN(h)?0:h-1);
+})();
+</script>
+</body>
+</html>
