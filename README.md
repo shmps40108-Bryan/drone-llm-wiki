@@ -1,7 +1,9 @@
 # 多旋翼無人機入門：LLM Wiki 與教學 HTML 簡報
 
-> 第十週作業：用 LLM Wiki 做一份教學 HTML 簡報
-> 繳交標題：`學校 學號 系級 姓名 多旋翼無人機入門`　← **（請自行填入）**
+> 第十週作業：用 LLM Wiki 做一份教學 HTML 簡報  
+> 繳交標題：`朝陽 11530609 資通碩一 曾耀禾 多旋翼無人機入門`  
+> 簡報連結：https://shmps40108-bryan.github.io/drone-llm-wiki/output/drone-slides.html  
+> Wiki 連結（本 repo）：https://github.com/shmps40108-Bryan/drone-llm-wiki
 
 ## 一、LLM Wiki 主題與簡短介紹
 
@@ -30,7 +32,7 @@
 ## 三、教學 HTML 簡報
 
 - 檔案：[`output/drone-slides.html`](output/drone-slides.html)（單一檔案，不連外部資源，下載後直接雙擊可開）
-- **線上瀏覽：`（開啟 GitHub Pages 後填入：https://帳號.github.io/倉庫名/output/drone-slides.html）`**
+- **線上瀏覽：https://shmps40108-bryan.github.io/drone-llm-wiki/output/drone-slides.html**
 - 操作：按鈕、方向鍵 ← →、空白鍵翻頁；`G` 總覽；`F` 全螢幕
 - 結構（16 頁）：封面 → 學習目標 → 什麼是無人機 → 結構 → 升力原理 → **互動示範**（按鈕看馬達加快或減慢）→ 為什麼要電腦 → 應用 → 風險 → 台灣法規（註冊、考照、飛行規則）→ 小心舊資訊 → 小結 → **小測驗**（6 題附答案）→ 來源與限制
 - 每頁底部標示來源與對應的 Wiki 頁面
